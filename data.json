@@ -1,0 +1,49 @@
+{
+  "title": "gfx942 D128-SW paged-dense optimization",
+  "updated": "2026-08-12",
+  "problemShape": {
+    "operation": "SDPA prefill (fwd)",
+    "masking": "causal + sliding window (window=4096)",
+    "dtype": "bf16 (primary), fp16 (secondary)",
+    "head_size": 128,
+    "gqa": "Hq=32 / Hkv=8",
+    "num_seqs": 1,
+    "kv_layout": "paged, block_size=16",
+    "tile": "T=64",
+    "seqlens": "Sq=Sk in {8192, 16384}",
+    "scale": "1/sqrt(128)",
+    "extras": "no softcap / alibi / sinks",
+    "competitor": "AITER unified-attention prefill"
+  },
+  "kernels": [
+    {
+      "name": "rocKE 4-warp GQA (D128-SW)",
+      "role": "baseline",
+      "sourceUrl": "https://github.com/ROCm/rocm-libraries/blob/users/avirgoel/ck/swa-d128-gfx942-4warp-route/dnn-providers/hip-kernel-provider/rocke/library/kernels/gfx942/attention_tiled_2d.py#L5699",
+      "sourcePath": "kernels/gfx942/attention_tiled_2d.py::build_gfx942_4warp_gqa (via _d128_gfx942_swa_fast; PR #10206 branch)",
+      "shapePassed": "D128, GQA 32/8, SW=4096, bf16, bs=16, Sq={8192,16384}, single-seq, paged"
+    },
+    {
+      "name": "AITER unified-attention prefill",
+      "role": "competitor",
+      "sourceUrl": "https://github.com/ROCm/aiter/blob/main/aiter/ops/triton/attention/unified_attention.py",
+      "sourcePath": "aiter.ops.triton.attention.unified_attention.unified_attention",
+      "shapePassed": "SAME shape (D128, GQA 32/8, window_size=(4095,0), bs=16, Sq={8192,16384}, paged block_table); SW + paged natively supported"
+    }
+  ],
+  "checklist": [
+    {"id": 1, "label": "Understand rocKE prefill", "phase": "grounding", "status": "done"},
+    {"id": 2, "label": "Fix problem shape", "phase": "grounding", "status": "done"},
+    {"id": 3, "label": "Dashboard lists problem shape", "phase": "dashboard", "status": "done"},
+    {"id": 4, "label": "Identify AITER competitor (SW parity)", "phase": "grounding", "status": "done"},
+    {"id": 5, "label": "Enumerate kernel sources + shapes", "phase": "dashboard", "status": "done"},
+    {"id": 6, "label": "Ground 4-warp vs AITER baselines", "phase": "baseline", "status": "todo"},
+    {"id": 11, "label": "Checklist + progress bar", "phase": "dashboard", "status": "done"},
+    {"id": 12, "label": "Vault journey doc", "phase": "journey", "status": "todo"},
+    {"id": 7, "label": "Port dense-paged kernel to gfx942", "phase": "deferred", "status": "deferred"},
+    {"id": 8, "label": "Three-way comparison", "phase": "deferred", "status": "deferred"},
+    {"id": 9, "label": "Perf + ISA comparison", "phase": "deferred", "status": "deferred"},
+    {"id": 10, "label": "Routing PR", "phase": "deferred", "status": "deferred"}
+  ],
+  "results": []
+}
