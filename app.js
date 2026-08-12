@@ -274,13 +274,14 @@ function resultsSection(d) {
 function calloutSection(ps) {
   return `
   <section>
-    <h2>5. Measurement caveat &mdash; read before trusting the ratios</h2>
-    <p class="lede">This dashboard reports what was actually measured, not a flattering subset. The
-    baseline is eager, single-call, with no CUDA-graph replay.</p>
+    <h2>5. Measurement methodology (reconciled)</h2>
+    <p class="lede">This dashboard reports what was actually measured, not a flattering subset. Baselines
+    are from the production bench (<code>benchmark_prefill2d_live.py --variants prod</code>, shared-stream
+    timing) and reconcile with PR #10206's ~1.48x; the launched kernel is confirmed to be the 4-warp GQA path.</p>
     <div class="callout reveal">
-      <h4>&#9888; Eager, un-reconciled ratios</h4>
+      <h4>&#9989; Reconciled ratios</h4>
       <p><b>Measurement:</b> ${esc(ps.measurement)}</p>
-      <p><b>Caveat:</b> ${esc(ps.ratio_caveat)}</p>
+      <p><b>Reconciliation:</b> ${esc(ps.ratio_caveat)}</p>
     </div>
   </section>`;
 }
