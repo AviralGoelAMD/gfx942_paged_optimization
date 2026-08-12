@@ -28,6 +28,7 @@ async function main() {
     kernelSection(ours, aiter) +
     resultsSection(d) +
     directionalReadSection(d) +
+    pagedResultsSection(d) +
     calloutSection(ps) +
     checklistSection(d);
   renderFooter(d, ps, ours, aiter);
@@ -311,6 +312,46 @@ function directionalReadSection(d) {
     <div class="legend reveal"><span><i class="la"></i>AITER (competitor)</span><span><i class="lo"></i>#10337 dense</span></div>
     <div class="res">${cards}</div>
     <p class="lede drtake reveal"><b>Takeaway:</b> ${esc(dr.takeaway)}</p>
+  </section>`;
+}
+
+// ---- paged-KV throughput ---------------------------------------------------
+function pagedResultsSection(d) {
+  const pr = d.pagedResults;
+  if (!pr || !pr.rows || !pr.rows.length) return "";
+  const maxMs = Math.max(...pr.rows.flatMap((r) => [r.paged_ms, r.aiter_ms, r.dense_ms].filter(Boolean)));
+  const bar = (ms, fill, label) => {
+    const w = Math.max(6, (ms / maxMs) * 100);
+    return `<div class="brow"><span class="blabel">${label}</span>
+      <div class="btrack"><div class="bfill ${fill}" data-w="${w.toFixed(1)}">${ms.toFixed(3)} ms</div></div></div>`;
+  };
+  const cards = pr.rows.map((r) => {
+    const pa = r.aiter_ms ? (r.paged_ms / r.aiter_ms) : null;
+    const pd = r.dense_ms ? (r.paged_ms / r.dense_ms) : null;
+    return `
+      <div class="rcard reveal">
+        <h4>${esc(r.dtype)} <span>&middot; ${esc(r.shape)} &middot; ${r.paged_tflops.toFixed(0)} TFLOP/s</span></h4>
+        <div class="bars">
+          ${bar(r.aiter_ms, "fa", "AITER")}
+          ${bar(r.paged_ms, "fo", "dense-paged")}
+        </div>
+        <div class="rmeta">
+          ${pa ? `<span class="slower">paged ${pa.toFixed(2)}&times; AITER</span>` : ""}
+          ${pd ? `<span>paged ${pd.toFixed(2)}&times; dense(unpaged)</span>` : ""}
+        </div>
+      </div>`;
+  }).join("");
+  return `
+  <section>
+    <h2>Paged-KV throughput <span class="h2note">(causal &middot; D128 &middot; GQA 32/8)</span></h2>
+    <p class="lede">The dense kernel with the <b>paged-KV load path</b> (purple) vs <b>AITER</b> (teal),
+    causal &mdash; <b>longer bar = slower</b>. Measured this session via <code>--mode paged</code>.</p>
+    <div class="callout reveal">
+      <h4>&#9888; Directional cross-run comparison</h4>
+      <p>${esc(pr.caveat)}</p>
+    </div>
+    <div class="legend reveal"><span><i class="la"></i>AITER</span><span><i class="lo"></i>dense-paged</span></div>
+    <div class="res">${cards}</div>
   </section>`;
 }
 

@@ -204,7 +204,19 @@
       { "phase": "Gate + opt-in entry", "status": "done", "evidence": "gfx942 supports() accepts causal-paged D128 (default wave geometry); run_attention_dense_torch paged entry validates block_tables/kv_lens" },
       { "phase": "GPU numeric", "status": "done", "evidence": "4/4 correct vs fp32 SDPA with NON-identity block table; bf16/fp16, GQA/MHA, block_size 16/32; max_abs <= 1.0e-2" },
       { "phase": "Occupancy (rocprofv3)", "status": "done", "evidence": "no spill (scratch=0), LDS unchanged (34816 B); paged VGPR 72 <= dense 128 -> paging adds no register pressure" },
-      { "phase": "Perf bench (3-way)", "status": "todo", "evidence": "Phase 5: dense-paged vs 4-warp vs AITER on the D128-SW/paged target shape" }
+      { "phase": "Perf bench (paged)", "status": "done", "evidence": "in-repo --mode paged (committed 06eacfe); dense-paged causal D128 GQA32/8 geomean bf16 135 / fp16 163 TFLOP/s; ~1.12-1.25x AITER at Sq8192 (directional). 3-way vs 4-warp deferred to the SW increment (different branch + regime)." }
+    ]
+  },
+  "pagedResults": {
+    "title": "Paged-KV throughput (causal \u00b7 D128 \u00b7 GQA 32/8)",
+    "caveat": "dense-paged measured THIS session (same-run, correctness-gated vs SDPA, --mode paged). dense-unpaged and AITER columns are from the earlier directional run (cross-run variance; AITER causal is unpaged), so paged/dense and paged/AITER are DIRECTIONAL, not a same-run gate. Target-regime three-way (vs the 4-warp SW kernel) is deferred to the SW increment.",
+    "rows": [
+      { "dtype": "bf16", "shape": "Sq2048", "paged_ms": 0.405, "paged_tflops": 84.8,  "dense_ms": 0.396, "aiter_ms": 0.182 },
+      { "dtype": "bf16", "shape": "Sq4096", "paged_ms": 0.875, "paged_tflops": 157.1, "dense_ms": 0.753, "aiter_ms": 0.562 },
+      { "dtype": "bf16", "shape": "Sq8192", "paged_ms": 2.952, "paged_tflops": 186.3, "dense_ms": 3.072, "aiter_ms": 2.638 },
+      { "dtype": "fp16", "shape": "Sq2048", "paged_ms": 0.331, "paged_tflops": 103.9, "dense_ms": 0.335, "aiter_ms": 0.173 },
+      { "dtype": "fp16", "shape": "Sq4096", "paged_ms": 0.735, "paged_tflops": 187.0, "dense_ms": 0.625, "aiter_ms": 0.534 },
+      { "dtype": "fp16", "shape": "Sq8192", "paged_ms": 2.463, "paged_tflops": 223.2, "dense_ms": 2.556, "aiter_ms": 1.971 }
     ]
   }
 }
