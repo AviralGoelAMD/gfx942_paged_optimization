@@ -32,18 +32,151 @@
     }
   ],
   "checklist": [
-    {"id": 1, "label": "Understand rocKE prefill", "phase": "grounding", "status": "done"},
-    {"id": 2, "label": "Fix problem shape", "phase": "grounding", "status": "done"},
-    {"id": 3, "label": "Dashboard lists problem shape", "phase": "dashboard", "status": "done"},
-    {"id": 4, "label": "Identify AITER competitor (SW parity)", "phase": "grounding", "status": "done"},
-    {"id": 5, "label": "Enumerate kernel sources + shapes", "phase": "dashboard", "status": "done"},
-    {"id": 6, "label": "Ground 4-warp vs AITER baselines", "phase": "baseline", "status": "todo"},
-    {"id": 11, "label": "Checklist + progress bar", "phase": "dashboard", "status": "done"},
-    {"id": 12, "label": "Vault journey doc", "phase": "journey", "status": "todo"},
-    {"id": 7, "label": "Port dense-paged kernel to gfx942", "phase": "deferred", "status": "deferred"},
-    {"id": 8, "label": "Three-way comparison", "phase": "deferred", "status": "deferred"},
-    {"id": 9, "label": "Perf + ISA comparison", "phase": "deferred", "status": "deferred"},
-    {"id": 10, "label": "Routing PR", "phase": "deferred", "status": "deferred"}
+    {
+      "id": 1,
+      "label": "Understand rocKE prefill",
+      "phase": "grounding",
+      "status": "done"
+    },
+    {
+      "id": 2,
+      "label": "Fix problem shape",
+      "phase": "grounding",
+      "status": "done"
+    },
+    {
+      "id": 3,
+      "label": "Dashboard lists problem shape",
+      "phase": "dashboard",
+      "status": "done"
+    },
+    {
+      "id": 4,
+      "label": "Identify AITER competitor (SW parity)",
+      "phase": "grounding",
+      "status": "done"
+    },
+    {
+      "id": 5,
+      "label": "Enumerate kernel sources + shapes",
+      "phase": "dashboard",
+      "status": "done"
+    },
+    {
+      "id": 6,
+      "label": "Ground 4-warp vs AITER baselines",
+      "phase": "baseline",
+      "status": "done"
+    },
+    {
+      "id": 11,
+      "label": "Checklist + progress bar",
+      "phase": "dashboard",
+      "status": "done"
+    },
+    {
+      "id": 12,
+      "label": "Vault journey doc",
+      "phase": "journey",
+      "status": "todo"
+    },
+    {
+      "id": 7,
+      "label": "Port dense-paged kernel to gfx942",
+      "phase": "deferred",
+      "status": "deferred"
+    },
+    {
+      "id": 8,
+      "label": "Three-way comparison",
+      "phase": "deferred",
+      "status": "deferred"
+    },
+    {
+      "id": 9,
+      "label": "Perf + ISA comparison",
+      "phase": "deferred",
+      "status": "deferred"
+    },
+    {
+      "id": 10,
+      "label": "Routing PR",
+      "phase": "deferred",
+      "status": "deferred"
+    }
   ],
-  "results": []
+  "results": [
+    {
+      "shape": "Sq8192",
+      "dtype": "bf16",
+      "kernel": "rocKE 4-warp",
+      "ms": 2.352,
+      "tflops": 175.3,
+      "max_abs": 0.000665,
+      "notes": "rocke/aiter=1.57x"
+    },
+    {
+      "shape": "Sq8192",
+      "dtype": "bf16",
+      "kernel": "AITER",
+      "ms": 1.494,
+      "tflops": 276.0,
+      "max_abs": 0.000665,
+      "notes": "competitor"
+    },
+    {
+      "shape": "Sq16384",
+      "dtype": "bf16",
+      "kernel": "rocKE 4-warp",
+      "ms": 5.265,
+      "tflops": 182.7,
+      "max_abs": 0.000616,
+      "notes": "rocke/aiter=1.57x"
+    },
+    {
+      "shape": "Sq16384",
+      "dtype": "bf16",
+      "kernel": "AITER",
+      "ms": 3.344,
+      "tflops": 287.7,
+      "max_abs": 0.000616,
+      "notes": "competitor"
+    },
+    {
+      "shape": "Sq8192",
+      "dtype": "fp16",
+      "kernel": "rocKE 4-warp",
+      "ms": 2.192,
+      "tflops": 188.1,
+      "max_abs": 7.3e-05,
+      "notes": "rocke/aiter=1.56x"
+    },
+    {
+      "shape": "Sq8192",
+      "dtype": "fp16",
+      "kernel": "AITER",
+      "ms": 1.404,
+      "tflops": 293.8,
+      "max_abs": 7.3e-05,
+      "notes": "competitor"
+    },
+    {
+      "shape": "Sq16384",
+      "dtype": "fp16",
+      "kernel": "rocKE 4-warp",
+      "ms": 4.786,
+      "tflops": 201.0,
+      "max_abs": 8.3e-05,
+      "notes": "rocke/aiter=1.54x"
+    },
+    {
+      "shape": "Sq16384",
+      "dtype": "fp16",
+      "kernel": "AITER",
+      "ms": 3.102,
+      "tflops": 310.1,
+      "max_abs": 8.3e-05,
+      "notes": "competitor"
+    }
+  ]
 }
