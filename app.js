@@ -23,6 +23,7 @@ async function main() {
   const main = document.getElementById("main");
   main.innerHTML =
     stageMapSection(d, ps, ours, aiter) +
+    portStatusSection(d) +
     shapeSection(ps) +
     kernelSection(ours, aiter) +
     resultsSection(d) +
@@ -351,6 +352,25 @@ function checklistSection(d) {
       <div class="ptrack"><div class="pfill" data-pct="${pct}"></div></div>
     </div>
     <div class="checklist reveal">${items}</div>
+  </section>`;
+}
+
+// ---- dense-paged port status ----------------------------------------------
+function portStatusSection(d) {
+  const p = d.portStatus;
+  if (!p) return "";
+  const mark = { done: "&#10003;", todo: "&#9675;" };
+  const rows = p.phases.map((ph) => `
+    <div class="ci ${esc(ph.status)}">
+      <span class="mark">${mark[ph.status] || "&#9675;"}</span>
+      <span class="lbl"><b>${esc(ph.phase)}</b> &mdash; ${esc(ph.evidence)}</span>
+    </div>`).join("");
+  return `
+  <section>
+    <h2>Dense-paged port &mdash; implemented &amp; GPU-verified</h2>
+    <p class="lede">${esc(p.title)}</p>
+    <p class="lede" style="opacity:.75">${esc(p.increment)}</p>
+    <div class="checklist reveal">${rows}</div>
   </section>`;
 }
 

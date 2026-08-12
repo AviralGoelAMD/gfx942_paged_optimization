@@ -80,13 +80,13 @@
       "id": 12,
       "label": "Vault journey doc",
       "phase": "journey",
-      "status": "todo"
+      "status": "done"
     },
     {
       "id": 7,
       "label": "Port dense-paged kernel to gfx942",
-      "phase": "deferred",
-      "status": "deferred"
+      "phase": "port",
+      "status": "done"
     },
     {
       "id": 8,
@@ -193,6 +193,18 @@
       { "dtype": "fp16", "shape": "Sq2048", "dense_ms": 0.335, "aiter_ms": 0.173, "ratio": 1.94 },
       { "dtype": "fp16", "shape": "Sq4096", "dense_ms": 0.625, "aiter_ms": 0.534, "ratio": 1.17 },
       { "dtype": "fp16", "shape": "Sq8192", "dense_ms": 2.556, "aiter_ms": 1.971, "ratio": 1.30 }
+    ]
+  },
+  "portStatus": {
+    "title": "Increment 2a: gfx942 dense flash-attn extended with a paged-KV load path (block_tables indirection), causal D128 - implemented and verified on real gfx942 (MI300X).",
+    "increment": "branch users/avirgoel/ck/gfx942-dense-paged (base #10337 dense + #10572 shared paged spec, merged); commit bd894d766c9. paged=False output byte-identical to the shipped dense kernel.",
+    "phases": [
+      { "phase": "Spec + validator", "status": "done", "evidence": "arch-safe causal-paged relaxation; gfx950 contract preserved; paged=False IR byte-identical (golden 30/30, llvm20+llvm22)" },
+      { "phase": "Load path", "status": "done", "evidence": "per-wave block_table hoist, kv_row = phys_base + gkey % block_size; cfvst off when paged (single naive K+V path); compiles + emits indirection" },
+      { "phase": "Gate + opt-in entry", "status": "done", "evidence": "gfx942 supports() accepts causal-paged D128 (default wave geometry); run_attention_dense_torch paged entry validates block_tables/kv_lens" },
+      { "phase": "GPU numeric", "status": "done", "evidence": "4/4 correct vs fp32 SDPA with NON-identity block table; bf16/fp16, GQA/MHA, block_size 16/32; max_abs <= 1.0e-2" },
+      { "phase": "Occupancy (rocprofv3)", "status": "done", "evidence": "no spill (scratch=0), LDS unchanged (34816 B); paged VGPR 72 <= dense 128 -> paging adds no register pressure" },
+      { "phase": "Perf bench (3-way)", "status": "todo", "evidence": "Phase 5: dense-paged vs 4-warp vs AITER on the D128-SW/paged target shape" }
     ]
   }
 }
