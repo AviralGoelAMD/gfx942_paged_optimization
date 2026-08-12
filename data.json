@@ -13,7 +13,9 @@
     "seqlens": "Sq=Sk in {8192, 16384}",
     "scale": "1/sqrt(128)",
     "extras": "no softcap / alibi / sinks",
-    "competitor": "AITER unified-attention prefill"
+    "competitor": "AITER unified-attention prefill",
+    "measurement": "eager per-call, CUDA-event timing (10 warmup / 50 iters); ROCKE_BACKEND=python; NO graph replay",
+    "ratio_caveat": "ratios are eager end-to-end (incl. host dispatch); NOT reconciled with PR #10206's graph-replay ~1.48x (rocKE inflates ~1.29x vs AITER ~1.15x => host-dispatch, not silicon). Graph-replay re-measure pending."
   },
   "kernels": [
     {
@@ -113,7 +115,7 @@
       "ms": 2.352,
       "tflops": 175.3,
       "max_abs": 0.000665,
-      "notes": "rocke/aiter=1.57x"
+      "notes": "eager 1.57x vs AITER (py-backend, no graph replay)"
     },
     {
       "shape": "Sq8192",
@@ -122,7 +124,7 @@
       "ms": 1.494,
       "tflops": 276.0,
       "max_abs": 0.000665,
-      "notes": "competitor"
+      "notes": "competitor (eager)"
     },
     {
       "shape": "Sq16384",
@@ -131,7 +133,7 @@
       "ms": 5.265,
       "tflops": 182.7,
       "max_abs": 0.000616,
-      "notes": "rocke/aiter=1.57x"
+      "notes": "eager 1.57x vs AITER (py-backend, no graph replay)"
     },
     {
       "shape": "Sq16384",
@@ -140,7 +142,7 @@
       "ms": 3.344,
       "tflops": 287.7,
       "max_abs": 0.000616,
-      "notes": "competitor"
+      "notes": "competitor (eager)"
     },
     {
       "shape": "Sq8192",
@@ -149,7 +151,7 @@
       "ms": 2.192,
       "tflops": 188.1,
       "max_abs": 7.3e-05,
-      "notes": "rocke/aiter=1.56x"
+      "notes": "eager 1.56x vs AITER (py-backend, no graph replay)"
     },
     {
       "shape": "Sq8192",
@@ -158,7 +160,7 @@
       "ms": 1.404,
       "tflops": 293.8,
       "max_abs": 7.3e-05,
-      "notes": "competitor"
+      "notes": "competitor (eager)"
     },
     {
       "shape": "Sq16384",
@@ -167,7 +169,7 @@
       "ms": 4.786,
       "tflops": 201.0,
       "max_abs": 8.3e-05,
-      "notes": "rocke/aiter=1.54x"
+      "notes": "eager 1.54x vs AITER (py-backend, no graph replay)"
     },
     {
       "shape": "Sq16384",
@@ -176,7 +178,7 @@
       "ms": 3.102,
       "tflops": 310.1,
       "max_abs": 8.3e-05,
-      "notes": "competitor"
+      "notes": "competitor (eager)"
     }
   ]
 }
