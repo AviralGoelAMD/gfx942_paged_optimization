@@ -26,6 +26,7 @@ async function main() {
     shapeSection(ps) +
     kernelSection(ours, aiter) +
     resultsSection(d) +
+    directionalReadSection(d) +
     calloutSection(ps) +
     checklistSection(d);
   renderFooter(d, ps, ours, aiter);
@@ -270,11 +271,53 @@ function resultsSection(d) {
   </section>`;
 }
 
-// ---- 5. honesty callout ----------------------------------------------------
+// ---- 5. directional read (causal, ballpark) --------------------------------
+function directionalReadSection(d) {
+  const dr = d.directionalRead;
+  if (!dr || !dr.rows || !dr.rows.length) return "";
+  const maxMs = Math.max(...dr.rows.flatMap((r) => [r.dense_ms, r.aiter_ms]));
+
+  const cards = dr.rows.map((r) => {
+    const bar = (ms, fill, label) => {
+      const w = Math.max(6, (ms / maxMs) * 100);
+      return `<div class="brow"><span class="blabel">${label}</span>
+        <div class="btrack"><div class="bfill ${fill}" data-w="${w.toFixed(1)}">${ms.toFixed(3)} ms</div></div></div>`;
+    };
+    return `
+      <div class="rcard reveal">
+        <h4>${esc(r.dtype)} <span>&middot; ${esc(r.shape)}</span></h4>
+        <div class="bars">
+          ${bar(r.aiter_ms, "fa", "AITER")}
+          ${bar(r.dense_ms, "fo", "dense")}
+        </div>
+        <div class="rmeta">
+          <span class="slower">dense ${r.ratio.toFixed(2)}&times; slower</span>
+        </div>
+      </div>`;
+  }).join("");
+
+  return `
+  <section>
+    <h2>5. Directional read <span class="h2note">(causal &middot; ballpark)</span></h2>
+    <p class="lede">A separate, directional-only sweep of the <b>#10337 dense kernel</b> (purple) vs
+    <b>AITER</b> (teal) under a <b>causal, dense-KV</b> regime &mdash; <b>longer bar = slower</b>. This is
+    <b>not</b> the campaign's SW+paged target regime above; the two are never conflated.</p>
+    <div class="callout reveal">
+      <h4>&#9888; Ballpark caveat &mdash; read directionally, not as a target-regime result</h4>
+      <p><b>${esc(dr.caveat)}</b></p>
+      <p>${esc(dr.regime)}</p>
+    </div>
+    <div class="legend reveal"><span><i class="la"></i>AITER (competitor)</span><span><i class="lo"></i>#10337 dense</span></div>
+    <div class="res">${cards}</div>
+    <p class="lede drtake reveal"><b>Takeaway:</b> ${esc(dr.takeaway)}</p>
+  </section>`;
+}
+
+// ---- 6. honesty callout ----------------------------------------------------
 function calloutSection(ps) {
   return `
   <section>
-    <h2>5. Measurement methodology (reconciled)</h2>
+    <h2>6. Measurement methodology (reconciled)</h2>
     <p class="lede">This dashboard reports what was actually measured, not a flattering subset. Baselines
     are from the production bench (<code>benchmark_prefill2d_live.py --variants prod</code>, shared-stream
     timing) and reconcile with PR #10206's ~1.48x; the launched kernel is confirmed to be the 4-warp GQA path.</p>
@@ -286,7 +329,7 @@ function calloutSection(ps) {
   </section>`;
 }
 
-// ---- 6. checklist ----------------------------------------------------------
+// ---- 7. checklist ----------------------------------------------------------
 function checklistSection(d) {
   const { done, active } = progress(d.checklist);
   const pct = active ? Math.round((100 * done) / active) : 0;
@@ -299,7 +342,7 @@ function checklistSection(d) {
     </div>`).join("");
   return `
   <section>
-    <h2>6. Checklist &amp; progress</h2>
+    <h2>7. Checklist &amp; progress</h2>
     <p class="lede">The living campaign checklist. Deferred stages are greyed &mdash; they are planned
     but out of scope for the current grounding pass.</p>
     <div class="hprog reveal" style="max-width:none">

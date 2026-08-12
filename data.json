@@ -180,5 +180,19 @@
       "max_abs": 0.0,
       "notes": "competitor (reference)"
     }
-  ]
+  ],
+  "directionalRead": {
+    "title": "Directional read (causal \u00b7 ballpark)",
+    "caveat": "CAUSAL \u00b7 dense-KV \u00b7 Sq<=8192 \u2014 strips sliding-window tile-skip + paging; directional only, not the target regime.",
+    "regime": "#10337 dense kernel (rocke_attention_dense_d128_hq32_kv8_bn64_..._causal) vs AITER unified_attention. Causal, D128, GQA 32/8. Ratio = dense_ms / aiter_ms (>1 = dense slower). All dense rows correct vs SDPA (tol 2e-2).",
+    "takeaway": "At Sq>=4096 the dense kernel is ~1.16-1.34x AITER \u2014 nearer AITER than the SW 4-warp baseline (~1.48-1.55x); trend is per-dtype (bf16 tightens with Sq, fp16 loosens).",
+    "rows": [
+      { "dtype": "bf16", "shape": "Sq2048", "dense_ms": 0.396, "aiter_ms": 0.182, "ratio": 2.17 },
+      { "dtype": "bf16", "shape": "Sq4096", "dense_ms": 0.753, "aiter_ms": 0.562, "ratio": 1.34 },
+      { "dtype": "bf16", "shape": "Sq8192", "dense_ms": 3.072, "aiter_ms": 2.638, "ratio": 1.16 },
+      { "dtype": "fp16", "shape": "Sq2048", "dense_ms": 0.335, "aiter_ms": 0.173, "ratio": 1.94 },
+      { "dtype": "fp16", "shape": "Sq4096", "dense_ms": 0.625, "aiter_ms": 0.534, "ratio": 1.17 },
+      { "dtype": "fp16", "shape": "Sq8192", "dense_ms": 2.556, "aiter_ms": 1.971, "ratio": 1.30 }
+    ]
+  }
 }
