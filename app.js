@@ -29,6 +29,7 @@ async function main() {
     resultsSection(d) +
     directionalReadSection(d) +
     pagedResultsSection(d) +
+    swResultsSection(d) +
     calloutSection(ps) +
     checklistSection(d);
   renderFooter(d, ps, ours, aiter);
@@ -355,6 +356,46 @@ function pagedResultsSection(d) {
   </section>`;
 }
 
+
+// ---- sliding-window three-way ----------------------------------------------
+function swResultsSection(d) {
+  const sr = d.swResults;
+  if (!sr || !sr.rows || !sr.rows.length) return "";
+  const maxMs = Math.max(...sr.rows.flatMap((r) => [r.densesw_ms, r.aiter_ms, r.fourwarp_ms]));
+  const bar = (ms, fill, label) => {
+    const w = Math.max(6, (ms / maxMs) * 100);
+    return `<div class="brow"><span class="blabel">${label}</span>
+      <div class="btrack"><div class="bfill ${fill}" data-w="${w.toFixed(1)}">${ms.toFixed(3)} ms</div></div></div>`;
+  };
+  const cards = sr.rows.map((r) => {
+    const va = (r.densesw_ms / r.aiter_ms).toFixed(2);
+    const vf = (r.densesw_ms / r.fourwarp_ms).toFixed(2);
+    const beats = r.densesw_ms < r.fourwarp_ms;
+    const vfspan = beats
+      ? `<span style="color:var(--ours);font-weight:600">vs 4-warp ${vf}&times; (faster)</span>`
+      : `<span class="slower">vs 4-warp ${vf}&times;</span>`;
+    return `
+      <div class="rcard reveal">
+        <h4>${esc(r.dtype)} <span>&middot; ${esc(r.shape)} &middot; W=4096</span></h4>
+        <div class="bars">
+          ${bar(r.aiter_ms, "fa", "AITER SW")}
+          ${bar(r.densesw_ms, "fo", "dense-paged-SW")}
+          ${bar(r.fourwarp_ms, "fa", "4-warp SW")}
+        </div>
+        <div class="rmeta">${vfspan} <span class="slower">vs AITER ${va}&times;</span></div>
+      </div>`;
+  }).join("");
+  return `
+  <section>
+    <h2>Sliding-window three-way <span class="h2note">(D128 &middot; GQA 32/8 &middot; W=4096)</span></h2>
+    <p class="lede">The optimized <b>dense-paged-SW</b> kernel (purple) vs <b>4-warp SW</b> and
+    <b>AITER SW</b> &mdash; <b>longer bar = slower</b>. dense-paged-SW beats the 4-warp on both dtypes.</p>
+    <div class="callout reveal"><h4>&#9888; Cross-run + optimization note</h4>
+      <p>${esc(sr.caveat)}</p><p><b>Optimization:</b> ${esc(sr.opt)}</p></div>
+    <div class="legend reveal"><span><i class="la"></i>AITER / 4-warp</span><span><i class="lo"></i>dense-paged-SW</span></div>
+    <div class="res">${cards}</div>
+  </section>`;
+}
 // ---- 6. honesty callout ----------------------------------------------------
 function calloutSection(ps) {
   return `

@@ -218,5 +218,14 @@
       { "dtype": "fp16", "shape": "Sq4096", "paged_ms": 0.735, "paged_tflops": 187.0, "dense_ms": 0.625, "aiter_ms": 0.534 },
       { "dtype": "fp16", "shape": "Sq8192", "paged_ms": 2.463, "paged_tflops": 223.2, "dense_ms": 2.556, "aiter_ms": 1.971 }
     ]
+  },
+  "swResults": {
+    "title": "Sliding-window three-way (D128 \u00b7 GQA 32/8 \u00b7 W=4096 \u00b7 target regime, Sq8192)",
+    "caveat": "dense-paged-SW (default grid) is the OPTIMIZED kernel (exp2_fast+iglp auto-enabled for the paged-SW cohort: +12.1% bf16 / +3.3% fp16 vs pre-opt, same-run kernel-bound time_launches A/B, numerically identical, scratch=0 no spill). 4-warp SW and AITER SW are the Increment-1 same-regime numbers (cross-run + different node -> DIRECTIONAL, not a same-run gate). dense-paged-SW beats the 4-warp on both dtypes; still ~1.3x behind AITER. A same-run three-way (4-warp on its #10206 branch) is the remaining rigor step.",
+    "opt": "Optimization search (6 attempts): wpe / block_n / block_size sweeps FLAT (config already optimal; bn128 OOMs 64KB LDS); exp2_fast +9.1% bf16, iglp +4.5% bf16 / +3.0% fp16, exp2+iglp +12.1% bf16 -- shipped for the paged-SW cohort (non-SW golden untouched, 30/30).",
+    "rows": [
+      { "dtype": "bf16", "shape": "Sq8192", "densesw_ms": 1.989, "fourwarp_ms": 2.318, "aiter_ms": 1.506 },
+      { "dtype": "fp16", "shape": "Sq8192", "densesw_ms": 1.886, "fourwarp_ms": 2.095, "aiter_ms": 1.400 }
+    ]
   }
 }
