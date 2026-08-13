@@ -90,15 +90,15 @@
     },
     {
       "id": 8,
-      "label": "Three-way comparison",
-      "phase": "deferred",
-      "status": "deferred"
+      "label": "Three-way comparison (same-node)",
+      "phase": "compare",
+      "status": "done"
     },
     {
       "id": 9,
-      "label": "Perf + ISA comparison",
-      "phase": "deferred",
-      "status": "deferred"
+      "label": "Perf comparison + optimization",
+      "phase": "compare",
+      "status": "done"
     },
     {
       "id": 10,
