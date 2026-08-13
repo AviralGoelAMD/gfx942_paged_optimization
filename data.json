@@ -220,12 +220,14 @@
     ]
   },
   "swResults": {
-    "title": "Sliding-window three-way (D128 \u00b7 GQA 32/8 \u00b7 W=4096 \u00b7 target regime, Sq8192)",
-    "caveat": "dense-paged-SW (default grid) is the OPTIMIZED kernel (exp2_fast+iglp auto-enabled for the paged-SW cohort: +12.1% bf16 / +3.3% fp16 vs pre-opt, same-run kernel-bound time_launches A/B, numerically identical, scratch=0 no spill). 4-warp SW and AITER SW are the Increment-1 same-regime numbers (cross-run + different node -> DIRECTIONAL, not a same-run gate). dense-paged-SW beats the 4-warp on both dtypes; still ~1.3x behind AITER. A same-run three-way (4-warp on its #10206 branch) is the remaining rigor step.",
+    "title": "Sliding-window three-way (D128 \u00b7 GQA 32/8 \u00b7 W=4096 \u00b7 SAME-NODE)",
+    "caveat": "SAME-NODE, same-session, kernel-bound (time_launches) -- node variance eliminated. dense-paged-SW (default grid, optimized exp2_fast+iglp cohort) is 11-13% faster than the 4-warp on ALL 4 configs. The 4-warp sits ~1.50x behind AITER (reproduces Increment 1 exactly); dense-paged-SW closes that to ~1.32x. Grids: dense-paged=default (paged rejects persistent), 4-warp=its SW route, AITER=Triton unified. dense-paged-SW numerically correct vs fp32 windowed SDPA; scratch=0 (no spill).",
     "opt": "Optimization search (6 attempts): wpe / block_n / block_size sweeps FLAT (config already optimal; bn128 OOMs 64KB LDS); exp2_fast +9.1% bf16, iglp +4.5% bf16 / +3.0% fp16, exp2+iglp +12.1% bf16 -- shipped for the paged-SW cohort (non-SW golden untouched, 30/30).",
     "rows": [
-      { "dtype": "bf16", "shape": "Sq8192", "densesw_ms": 1.989, "fourwarp_ms": 2.318, "aiter_ms": 1.506 },
-      { "dtype": "fp16", "shape": "Sq8192", "densesw_ms": 1.886, "fourwarp_ms": 2.095, "aiter_ms": 1.400 }
+      { "dtype": "bf16", "shape": "Sq8192",  "densesw_ms": 2.040, "fourwarp_ms": 2.303, "aiter_ms": 1.534 },
+      { "dtype": "bf16", "shape": "Sq16384", "densesw_ms": 4.537, "fourwarp_ms": 5.214, "aiter_ms": 3.461 },
+      { "dtype": "fp16", "shape": "Sq8192",  "densesw_ms": 1.897, "fourwarp_ms": 2.143, "aiter_ms": 1.424 },
+      { "dtype": "fp16", "shape": "Sq16384", "densesw_ms": 4.198, "fourwarp_ms": 4.817, "aiter_ms": 3.190 }
     ]
   }
 }
