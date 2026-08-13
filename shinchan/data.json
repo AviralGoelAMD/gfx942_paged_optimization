@@ -1,0 +1,59 @@
+{
+  "title": "shinchan — fp16 causal dense-paged prefill vs AITER (gfx942 optimization)",
+  "updated": "2026-08-13",
+  "problemShape": {
+    "dtype": "fp16",
+    "mask": "causal (no sliding window)",
+    "head_dim": 128,
+    "num_query_heads": 32,
+    "num_kv_heads": 8,
+    "gqa_ratio": 4,
+    "kv_layout": "paged",
+    "block_size": 16,
+    "num_seqs": 1,
+    "seqlens": "Sq=Sk 8192 (primary) + 16384",
+    "scale": "1/sqrt(128)",
+    "softcap_alibi_sinks": "none"
+  },
+  "kernels": [
+    {
+      "name": "rockKE dense-paged (shinchan)",
+      "role": "ours",
+      "sourceUrl": "https://github.com/AviralGoelAMD/rocm-libraries/blob/users/avirgoel/ck/gfx942-dense-paged-sw/dnn-providers/hip-kernel-provider/rocke/library/kernels/gfx942/attention_dense.py",
+      "sourcePath": "dnn-providers/hip-kernel-provider/rocke/library/kernels/gfx942/attention_dense.py (build_attention_dense)",
+      "argsPassed": "q=[1,8192,32,128] fp16; paged K/V cache=[512,16,8,128] fp16; block_tables=[1,512] int32; kv_lens=[8192] int32; scale=1/sqrt(128); causal; block_size=16; num_kv_blocks=512"
+    },
+    {
+      "name": "AITER unified_attention (Triton)",
+      "role": "competitor",
+      "sourceUrl": "https://github.com/ROCm/aiter/blob/main/aiter/ops/triton/unified_attention.py",
+      "argsPassed": "q=[8192,32,128] fp16; paged K/V cache=[512,16,8,128] fp16; cu_seqlens_q=[0,8192]; seqused_k=[8192]; max_seqlen_q=max_seqlen_k=8192; softmax_scale=1/sqrt(128); causal=True; window_size=(-1,-1); block_table=[1,512]"
+    }
+  ],
+  "applesToApples": "Both arg sets describe the SAME logical problem: a single sequence of 8192 tokens, paged K/V with block_size=16, causal masking, fp16, GQA 32 query heads / 8 KV heads, head_dim 128. The comparison is apples-to-apples; only the ABI layout differs — ours is batched [1, S, H, D] while AITER is varlen [total_q, H, D].",
+  "results": {
+    "status": "pending",
+    "note": "populated after rocprof run",
+    "rows": []
+  },
+  "counters": {
+    "status": "pending",
+    "note": "populated after rocprof run",
+    "rows": []
+  },
+  "isa": {
+    "status": "pending",
+    "note": "populated after ISA dump",
+    "ours": "",
+    "aiter": ""
+  },
+  "checklist": [
+    { "label": "Frame problem / SSOT", "status": "done" },
+    { "label": "Nail competitor (AITER; FlyDSL n/a on gfx942)", "status": "done" },
+    { "label": "Ground baseline (ours vs AITER)", "status": "done" },
+    { "label": "Profile: hardware counters", "status": "in_progress" },
+    { "label": "ISA comparison", "status": "pending" },
+    { "label": "Identify bottleneck + lever", "status": "pending" },
+    { "label": "Implement + verify", "status": "pending" }
+  ]
+}
