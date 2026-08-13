@@ -32,28 +32,41 @@
   ],
   "applesToApples": "Both arg sets describe the SAME logical problem: a single sequence of 8192 tokens, paged K/V with block_size=16, causal masking, fp16, GQA 32 query heads / 8 KV heads, head_dim 128. The comparison is apples-to-apples; only the ABI layout differs — ours is batched [1, S, H, D] while AITER is varlen [total_q, H, D].",
   "results": {
-    "status": "pending",
-    "note": "populated after rocprof run",
-    "rows": []
+    "status": "done",
+    "note": "Same-node, kernel-bound time_launches. ours/AITER ratio > 1 means AITER is faster. Gap narrows at longer Sq.",
+    "rows": [
+      { "dtype": "fp16", "shape": "Sq=Sk 8192", "ours_ms": 2.74, "aiter_ms": 1.52, "max_abs": "2.4e-4" },
+      { "dtype": "fp16", "shape": "Sq=Sk 16384", "ours_ms": 8.26, "aiter_ms": 5.94, "max_abs": "2.4e-4" }
+    ]
   },
   "counters": {
-    "status": "pending",
-    "note": "populated after rocprof run",
-    "rows": []
+    "status": "done",
+    "note": "rocprofv3, gfx942, fp16 causal paged bs16 Sq8192. Same compute (VALU/MFMA/MOPS) and same occupancy (SQ_WAVES) — but ours issues 3.2x more LDS instructions, more bank conflicts, and 1.5x more stalls, so it burns 2.4x the active cycles and the MFMA units sit idle. Ours is LDS-traffic-bound, not compute- or occupancy-bound. Likely root cause: paging disables the conflict-free register-V path (cfvst off when paged), routing V through LDS.",
+    "rows": [
+      { "counter": "GRBM active cycles", "ours": "40.6M", "aiter": "16.7M", "note": "2.43x — ours burns more cycles (tracks the perf gap)" },
+      { "counter": "SQ_WAVES (occupancy)", "ours": "8192", "aiter": "8224", "note": "~equal — not an occupancy problem" },
+      { "counter": "VALU insts", "ours": "257.7M", "aiter": "252.8M", "note": "~equal" },
+      { "counter": "MFMA insts", "ours": "34.6M", "aiter": "33.8M", "note": "~equal — same matmul work" },
+      { "counter": "F16 MFMA MOPS", "ours": "1.107G", "aiter": "1.082G", "note": "~equal compute" },
+      { "counter": "SQ_INSTS_LDS", "ours": "78.9M", "aiter": "24.4M", "note": "3.23x — the bottleneck (V through LDS on the paged path)" },
+      { "counter": "SQ_INSTS_VMEM", "ours": "9.45M", "aiter": "7.07M", "note": "1.34x" },
+      { "counter": "SQ_WAIT_ANY (stalls)", "ours": "464M", "aiter": "312M", "note": "1.49x — more stall cycles" },
+      { "counter": "LDS bank conflict (norm.)", "ours": "~1.6x", "aiter": "1x", "note": "ours has more LDS bank conflicts" }
+    ]
   },
   "isa": {
-    "status": "pending",
-    "note": "populated after ISA dump",
-    "ours": "",
-    "aiter": ""
+    "status": "done",
+    "note": "Static instruction histogram of the compiled kernel bodies (llvm-objdump, gfx942). Same v_mfma count (64 each = identical matmul work), but ours has 3.6x more ds_read (LDS reads): 144 vs 40. This corroborates the counter finding at the ISA level — ours is LDS-read-bound on the paged path (V read from LDS), while AITER keeps far fewer LDS reads.",
+    "ours": "rocke_attention_dense (fp16 causal paged bs16)\n  v_mfma        :  64\n  ds_read       : 144   <- LDS reads (bottleneck)\n  ds_write      :   0\n  glob/buf_load :  33\n  v_alu         : 913\n  s_scalar      : 422",
+    "aiter": "kernel_unified_attention_2d (Triton)\n  v_mfma        :  64\n  ds_read       :  40\n  ds_write      :  20\n  glob/buf_load :  22\n  v_alu         : 887\n  s_scalar      : 529"
   },
   "checklist": [
     { "label": "Frame problem / SSOT", "status": "done" },
     { "label": "Nail competitor (AITER; FlyDSL n/a on gfx942)", "status": "done" },
     { "label": "Ground baseline (ours vs AITER)", "status": "done" },
-    { "label": "Profile: hardware counters", "status": "in_progress" },
-    { "label": "ISA comparison", "status": "pending" },
-    { "label": "Identify bottleneck + lever", "status": "pending" },
+    { "label": "Profile: hardware counters", "status": "done" },
+    { "label": "ISA comparison", "status": "done" },
+    { "label": "Identify bottleneck + lever (LDS / register-V on paged)", "status": "done" },
     { "label": "Implement + verify", "status": "pending" }
   ]
 }
