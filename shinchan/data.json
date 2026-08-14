@@ -43,15 +43,15 @@
     "status": "done",
     "note": "rocprofv3, gfx942, fp16 causal paged bs16 Sq8192. Same compute (VALU/MFMA/MOPS) and same occupancy (SQ_WAVES) — but ours issues 3.2x more LDS instructions, more bank conflicts, and 1.5x more stalls, so it burns 2.4x the active cycles and the MFMA units sit idle. Ours is LDS-traffic-bound, not compute- or occupancy-bound. Likely root cause: paging disables the conflict-free register-V path (cfvst off when paged), routing V through LDS.",
     "rows": [
-      { "counter": "GRBM active cycles", "ours": "40.6M", "aiter": "16.7M", "note": "2.43x — ours burns more cycles (tracks the perf gap)" },
-      { "counter": "SQ_WAVES (occupancy)", "ours": "8192", "aiter": "8224", "note": "~equal — not an occupancy problem" },
-      { "counter": "VALU insts", "ours": "257.7M", "aiter": "252.8M", "note": "~equal" },
-      { "counter": "MFMA insts", "ours": "34.6M", "aiter": "33.8M", "note": "~equal — same matmul work" },
-      { "counter": "F16 MFMA MOPS", "ours": "1.107G", "aiter": "1.082G", "note": "~equal compute" },
-      { "counter": "SQ_INSTS_LDS", "ours": "78.9M", "aiter": "24.4M", "note": "3.23x — the bottleneck (V through LDS on the paged path)" },
-      { "counter": "SQ_INSTS_VMEM", "ours": "9.45M", "aiter": "7.07M", "note": "1.34x" },
-      { "counter": "SQ_WAIT_ANY (stalls)", "ours": "464M", "aiter": "312M", "note": "1.49x — more stall cycles" },
-      { "counter": "LDS bank conflict (norm.)", "ours": "~1.6x", "aiter": "1x", "note": "ours has more LDS bank conflicts" }
+      { "counter": "GRBM active cycles", "ours": "40.6M", "aiter": "16.7M", "note": "2.43x — ours burns more cycles (tracks the perf gap)", "def": "GRBM_GUI_ACTIVE: number of cycles the GPU compute engine was active during the kernel. A proxy for execution time at fixed clock — more active cycles means a slower kernel." },
+      { "counter": "SQ_WAVES (occupancy)", "ours": "8192", "aiter": "8224", "note": "~equal — not an occupancy problem", "def": "SQ_WAVES: total wavefronts (groups of 64 threads) dispatched to the sequencers. A proxy for how much parallel work is resident; similar counts imply similar occupancy." },
+      { "counter": "VALU insts", "ours": "257.7M", "aiter": "252.8M", "note": "~equal", "def": "SQ_INSTS_VALU: count of vector-ALU (SIMD arithmetic) instructions issued. Represents general elementwise/softmax math; equal counts imply the same arithmetic work." },
+      { "counter": "MFMA insts", "ours": "34.6M", "aiter": "33.8M", "note": "~equal — same matmul work", "def": "SQ_INSTS_MFMA: matrix-fused-multiply-add instructions issued on the matrix cores (the QK^T and P*V matmuls). Equal counts imply identical matmul work." },
+      { "counter": "F16 MFMA MOPS", "ours": "1.107G", "aiter": "1.082G", "note": "~equal compute", "def": "SQ_INSTS_VALU_MFMA_MOPS_F16: fp16 matrix operation volume (matmul throughput demand). Equal values confirm the two kernels do the same amount of compute." },
+      { "counter": "SQ_INSTS_LDS", "ours": "78.9M", "aiter": "24.4M", "note": "3.23x — the bottleneck (V through LDS on the paged path)", "def": "SQ_INSTS_LDS: local-data-share (shared-memory) instructions issued, i.e. ds_read/ds_write. High counts mean the kernel is moving a lot of data through LDS — a shared-memory-traffic bottleneck." },
+      { "counter": "SQ_INSTS_VMEM", "ours": "9.45M", "aiter": "7.07M", "note": "1.34x", "def": "SQ_INSTS_VMEM: vector-memory instructions (global/buffer loads and stores to HBM). Reflects off-chip memory traffic issued by the vector units." },
+      { "counter": "SQ_WAIT_ANY (stalls)", "ours": "464M", "aiter": "312M", "note": "1.49x — more stall cycles", "def": "SQ_WAIT_ANY: cycles wavefronts spent waiting on any dependency (memory returns, LDS, barriers). High values mean the kernel is frequently stalled rather than doing useful work." },
+      { "counter": "LDS bank conflict (norm.)", "ours": "~1.6x", "aiter": "1x", "note": "ours has more LDS bank conflicts", "def": "SQ_LDS_BANK_CONFLICT: extra serialized cycles caused by multiple lanes hitting the same LDS bank in one access. Higher means a less efficient shared-memory access pattern wasting LDS cycles." }
     ]
   },
   "isa": {

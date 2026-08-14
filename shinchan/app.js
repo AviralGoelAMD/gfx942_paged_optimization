@@ -183,11 +183,14 @@ function countersSection(d) {
     body = pendingBox(c.note);
   } else {
     const head = `<tr><th>Counter</th><th>rockKE</th><th>AITER</th><th>note</th></tr>`;
-    const rows = c.rows.map((row) => `
-      <tr><td class="p">${esc(row.counter || "")}</td>
+    const rows = c.rows.map((row) => {
+      const def = row.def ? ` title="${esc(row.def)}" style="cursor:help;border-bottom:1px dotted currentColor"` : "";
+      return `
+      <tr><td class="p"><span${def}>${esc(row.counter || "")}</span></td>
       <td class="v">${esc(row.ours != null ? row.ours : "")}</td>
       <td class="v">${esc(row.aiter != null ? row.aiter : "")}</td>
-      <td class="v">${esc(row.note || "")}</td></tr>`).join("");
+      <td class="v">${esc(row.note || "")}</td></tr>`;
+    }).join("");
     body = `<table class="reveal"><thead>${head}</thead><tbody>${rows}</tbody></table>`;
   }
   return `
