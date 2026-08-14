@@ -60,6 +60,17 @@
     "ours": "rocke_attention_dense (fp16 causal paged bs16)\n  v_mfma        :  64\n  ds_read       : 144   <- LDS reads (bottleneck)\n  ds_write      :   0\n  glob/buf_load :  33\n  v_alu         : 913\n  s_scalar      : 422",
     "aiter": "kernel_unified_attention_2d (Triton)\n  v_mfma        :  64\n  ds_read       :  40\n  ds_write      :  20\n  glob/buf_load :  22\n  v_alu         : 887\n  s_scalar      : 529"
   },
+  "ablation": {
+    "status": "done",
+    "note": "Ablating the LDS reads of K and V (feeding constant registers instead of reading from LDS) removes the ENTIRE gap to AITER and then some. There is no architectural wall: the full 1.79x gap is K and V staged through LDS and re-read on every MFMA step. cfvst (conflict-free V still in LDS) only recovers 7% because it keeps the data in LDS. Lever: keep K and V register-resident like AITER, targeting ~1.37 ms (parity-or-better). Rows marked 'diagnostic' are intentionally wrong-result perf probes.",
+    "rows": [
+      {"variant":"baseline (current kernel)","ours_ms":2.74,"vs_aiter":"1.79x","note":"correct"},
+      {"variant":"cfvst ON for paged","ours_ms":2.54,"vs_aiter":"1.73x","note":"correct; conflict-free V but still in LDS (+7% only)"},
+      {"variant":"V-read -> registers","ours_ms":2.11,"vs_aiter":"1.44x","note":"diagnostic (wrong result): V LDS read made free"},
+      {"variant":"K-read -> registers","ours_ms":2.00,"vs_aiter":"1.37x","note":"diagnostic: K LDS read made free"},
+      {"variant":"K+V both -> registers","ours_ms":1.37,"vs_aiter":"0.94x (beats AITER)","note":"diagnostic: both free -> entire gap is K/V LDS reads"}
+    ]
+  },
   "checklist": [
     { "label": "Frame problem / SSOT", "status": "done" },
     { "label": "Nail competitor (AITER; FlyDSL n/a on gfx942)", "status": "done" },
@@ -67,6 +78,7 @@
     { "label": "Profile: hardware counters", "status": "done" },
     { "label": "ISA comparison", "status": "done" },
     { "label": "Identify bottleneck + lever (LDS / register-V on paged)", "status": "done" },
+    { "label": "Bottleneck decomposition (ablation)", "status": "done" },
     { "label": "Implement + verify", "status": "pending" }
   ]
 }

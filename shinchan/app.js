@@ -38,6 +38,7 @@ async function main() {
     shapeSection(ps) +
     kernelSection(d, ours, aiter) +
     resultsSection(d) +
+    ablationSection(d) +
     countersSection(d) +
     isaSection(d) +
     checklistSection(d);
@@ -171,6 +172,32 @@ function resultsSection(d) {
     <h2>3. Performance ${statusNote(r)}</h2>
     <p class="lede">Per-call latency &mdash; <b>longer bar = slower</b>. AITER (teal) is the bar to beat;
     rockKE is purple. Populated after the rocprof timing run.</p>
+    ${body}
+  </section>`;
+}
+
+// ---- 3b. bottleneck decomposition (ablation) -------------------------------
+function ablationSection(d) {
+  const a = d.ablation;
+  if (!a) return "";
+  let body;
+  if (!a.rows || !a.rows.length) {
+    body = pendingBox(a.note);
+  } else {
+    const head = `<tr><th>Variant</th><th>ours (ms)</th><th>vs AITER</th><th>note</th></tr>`;
+    const rows = a.rows.map((row) => `
+      <tr><td class="p">${esc(row.variant || "")}</td>
+      <td class="v">${row.ours_ms != null ? Number(row.ours_ms).toFixed(2) : ""}</td>
+      <td class="v">${esc(row.vs_aiter != null ? row.vs_aiter : "")}</td>
+      <td class="v">${esc(row.note || "")}</td></tr>`).join("");
+    body = `${a.note ? `<p class="lede">${esc(a.note)}</p>` : ""}
+      <table class="reveal"><thead>${head}</thead><tbody>${rows}</tbody></table>`;
+  }
+  return `
+  <section>
+    <h2>Bottleneck decomposition (ablation) ${statusNote(a)}</h2>
+    <p class="lede">Ablating the K/V LDS reads one at a time &mdash; how much of the gap to AITER each
+    read is responsible for. Diagnostic rows are wrong-result perf probes that make the LDS read free.</p>
     ${body}
   </section>`;
 }
