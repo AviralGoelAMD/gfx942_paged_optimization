@@ -78,7 +78,8 @@ function analysisSection(d) {
       <tbody>${rows}</tbody>
     </table>
     <div class="note reveal"><b>ISA (llvm-objdump, gfx942):</b> total insts ours <b>${i.ours_total}</b> vs AITER <b>${i.aiter_total}</b>;
-      ds_read ours <b>${i.ours_ds_read}</b> vs AITER <b>${i.aiter_ds_read}</b>; v_mfma <b>${i.ours_mfma}</b> = <b>${i.aiter_mfma}</b> (identical matmul work).</div>
+      ds_read ours <b>${i.ours_ds_read}</b> vs AITER <b>${i.aiter_ds_read}</b>, ds_write ours <b>${i.ours_ds_write}</b> vs AITER <b>${i.aiter_ds_write}</b>;
+      v_mfma <b>${i.ours_mfma}</b> = <b>${i.aiter_mfma}</b> (identical matmul work). AITER's static LDS descriptor is 0, but its ds_read/ds_write prove it uses <b>dynamically-allocated</b> LDS &mdash; just a smaller footprint than ours.</div>
     <div class="callout reveal"><h4>&#128200; Gap analysis</h4><p>${esc(a.takeaway)}</p>
       <p style="opacity:.7">${esc(a.caveat)}</p></div>
   </section>`;

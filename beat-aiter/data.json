@@ -55,12 +55,12 @@
       {"metric": "SQ_WAIT_ANY",        "unit": "cyc",       "ours": 3.94e8, "aiter": 2.01e8, "read": "ours ~2x stall cycles"},
       {"metric": "SQ_WAVE_CYCLES",     "unit": "cyc",       "ours": 1.19e9, "aiter": 8.66e8, "read": "ours +37% wave-cycles"},
       {"metric": "VmemLatency",        "unit": "cyc",       "ours": 562.9,  "aiter": 513.1,  "read": "similar (slightly higher)"},
-      {"metric": "LDS",                "unit": "B",         "ours": 34816,  "aiter": 0,      "read": "ours stages 34 KB LDS; AITER register-resident"},
+      {"metric": "LDS (static)",       "unit": "B",         "ours": 34816,  "aiter": 0,      "read": "static descriptor; AITER=0 but uses DYNAMIC LDS (ISA: ds_read 40 + ds_write 20)"},
       {"metric": "VGPR",               "unit": "",          "ours": 128,    "aiter": 124,    "read": "~same"},
       {"metric": "Workgroup",          "unit": "threads",   "ours": 512,    "aiter": 256,    "read": "ours 2x WG \u2192 fewer waves/CU"}
     ],
-    "isa": {"ours_total": 2464, "aiter_total": 2106, "ours_ds_read": 144, "aiter_ds_read": 40, "ours_mfma": 64, "aiter_mfma": 64},
-    "takeaway": "AITER's ~1.56x lead traces to OCCUPANCY + MFMA UTILIZATION, not VGPR or memory latency: ours stages 34 KB LDS at WG=512 \u2192 4.9 waves/CU and 22% MFMA util, with ~2x the wait cycles; AITER is LDS-free (0 B, WG=256) \u2192 6.4 waves/CU and 37.7% MFMA util. ISA agrees (same 64 v_mfma, but ours 144 ds_read vs AITER 40). Lever: cut LDS staging / workgroup size to raise occupancy and feed the matrix units."
+    "isa": {"ours_total": 2464, "aiter_total": 2106, "ours_ds_read": 144, "aiter_ds_read": 40, "ours_ds_write": 0, "aiter_ds_write": 20, "ours_mfma": 64, "aiter_mfma": 64},
+    "takeaway": "AITER is NOT LDS-free \u2014 its ISA issues ds_read(40) + ds_write(20) + ds_bpermute(2); the static LDS descriptor reads 0 only because Triton allocates LDS DYNAMICALLY at launch (rocprofv3's static LDS_Block_Size field misses it). The ~1.56x gap is OCCUPANCY + MFMA UTILIZATION: OURS uses a 34 KB STATIC LDS + 2x workgroup (512 vs 256) \u2192 4.9 waves/CU and 22% MFMA util with ~2x wait cycles; AITER's smaller (dynamic) LDS + WG=256 \u2192 6.4 waves/CU and 37.7% MFMA util (same 64 v_mfma). Lever: SHRINK ours' LDS footprint / workgroup to raise occupancy \u2014 not 'avoid LDS'."
   },
   "checklist": [
     {"phase": "infra",      "label": "Phase 0 \u2014 stand up journey doc + this dashboard (SSOT)",                                    "status": "done"},
