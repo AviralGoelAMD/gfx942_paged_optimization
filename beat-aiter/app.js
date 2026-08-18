@@ -33,6 +33,7 @@ async function main() {
     shapeSection(ps) +
     kernelSection(ours, aiter) +
     resultsSection(d) +
+    analysisSection(d) +
     directionalReadSection(d) +
     pagedResultsSection(d) +
     swResultsSection(d) +
@@ -52,6 +53,35 @@ async function main() {
     { threshold: 0.12 }
   );
   document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+}
+
+// ---- 5. ISA + rocprofv3 gap analysis ---------------------------------------
+function analysisSection(d) {
+  const a = d.analysis;
+  if (!a) return "";
+  const num = (x) => (typeof x === "number" && Math.abs(x) >= 1e5) ? x.toExponential(2) : x;
+  const rows = a.counters.map((c) => `<tr>
+      <td class="p">${esc(c.metric)}${c.unit ? ` <span style="opacity:.55">(${esc(c.unit)})</span>` : ""}</td>
+      <td class="v" style="color:var(--ours)">${esc(num(c.ours))}</td>
+      <td class="v" style="color:var(--aiter)">${esc(num(c.aiter))}</td>
+      <td class="v" style="text-align:left">${esc(c.read)}</td></tr>`).join("");
+  const i = a.isa;
+  return `
+  <section>
+    <h2>5. Where the gap is <span class="h2note">(ISA + rocprofv3 &middot; bf16 Sq8192 &middot; verified kernels)</span></h2>
+    <p class="lede">Fresh same-node profiling of the two attention kernels &mdash;
+      <b style="color:var(--ours)">ours = ${esc(a.ours_kernel)}</b> vs
+      <b style="color:var(--aiter)">AITER = ${esc(a.aiter_kernel)}</b>. Kernel identity verified via the
+      per-kernel launch table (copyBuffer / init helpers excluded).</p>
+    <table class="reveal">
+      <thead><tr><th>rocprofv3 counter</th><th>rocKE</th><th>AITER</th><th>read</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="note reveal"><b>ISA (llvm-objdump, gfx942):</b> total insts ours <b>${i.ours_total}</b> vs AITER <b>${i.aiter_total}</b>;
+      ds_read ours <b>${i.ours_ds_read}</b> vs AITER <b>${i.aiter_ds_read}</b>; v_mfma <b>${i.ours_mfma}</b> = <b>${i.aiter_mfma}</b> (identical matmul work).</div>
+    <div class="callout reveal"><h4>&#128200; Gap analysis</h4><p>${esc(a.takeaway)}</p>
+      <p style="opacity:.7">${esc(a.caveat)}</p></div>
+  </section>`;
 }
 
 // ---- header ----------------------------------------------------------------
