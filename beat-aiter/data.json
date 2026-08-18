@@ -62,13 +62,25 @@
     "isa": {"ours_total": 2464, "aiter_total": 2106, "ours_ds_read": 144, "aiter_ds_read": 40, "ours_ds_write": 0, "aiter_ds_write": 20, "ours_mfma": 64, "aiter_mfma": 64},
     "takeaway": "AITER is NOT LDS-free \u2014 its ISA issues ds_read(40) + ds_write(20) + ds_bpermute(2); the static LDS descriptor reads 0 only because Triton allocates LDS DYNAMICALLY at launch (rocprofv3's static LDS_Block_Size field misses it). The ~1.56x gap is OCCUPANCY + MFMA UTILIZATION: OURS uses a 34 KB STATIC LDS + 2x workgroup (512 vs 256) \u2192 4.9 waves/CU and 22% MFMA util with ~2x wait cycles; AITER's smaller (dynamic) LDS + WG=256 \u2192 6.4 waves/CU and 37.7% MFMA util (same 64 v_mfma). Lever: SHRINK ours' LDS footprint / workgroup to raise occupancy \u2014 not 'avoid LDS'."
   },
+  "foldResult": {
+    "title": "GQA-fold prototype (Phase 5) \u2014 NOT VALIDATED",
+    "verdict": "Occupancy rose +38% (6.76 waves/CU \u2014 beat AITER's 6.40), but MFMA-util FELL (22\u219214.9%) and latency regressed (+29% Sq8192, +51% Sq16384). We beat AITER on occupancy and still lost \u2192 occupancy was NOT the bottleneck.",
+    "insight": "MFMA-util tracks per-MFMA INSTRUCTION OVERHEAD, not occupancy: AITER 40 ds_read \u2192 37.7%; ours 144 ds_read (+128 ds_read_u16, +144 v_perm) \u2192 22% (current) / 14.9% (fold, whose smaller 32-tok tiles add per-tile addressing/permute overhead). Pivot: cut the naive-V element-wise reads / V-transpose (register-V or standard-QK), not occupancy.",
+    "correctness": "FOLD_GATE PASS \u2014 Sq{4096,8192,16384} \u00d7 identity+permuted-bt, max_abs \u22641.2e-2. Kernel is CORRECT, just not faster. Left committed but gated-off (default False); not graduated.",
+    "rows": [
+      {"kernel": "current body",             "occ": 4.90, "mfma": 22.0, "ms8192": 1.73, "ms16384": 3.35},
+      {"kernel": "fold (WG256, LDS 32768)",  "occ": 6.76, "mfma": 14.9, "ms8192": 2.24, "ms16384": 5.05},
+      {"kernel": "AITER",                    "occ": 6.40, "mfma": 37.7, "ms8192": 1.11, "ms16384": 2.46}
+    ]
+  },
   "checklist": [
     {"phase": "infra",      "label": "Phase 0 \u2014 stand up journey doc + this dashboard (SSOT)",                                    "status": "done"},
     {"phase": "frame",      "label": "Phase 1 \u2014 pin regime + problem shape (SSOT): dense flash-attn \u00b7 paged \u00b7 SW, D128 GQA32/8 W4096", "status": "done"},
     {"phase": "competitor", "label": "Phase 2 \u2014 AITER unified_attention source + SW parity confirmed (window_size=(4095,0))",       "status": "done"},
     {"phase": "baseline",   "label": "Phase 3 \u2014 two-way baseline: dense-paged-SW vs AITER (same-node, correctness-gated, FRESH)",   "status": "done"},
     {"phase": "analyze",    "label": "Phase 4 \u2014 ISA + rocprofv3 HW counters, ours vs AITER: gap = occupancy + MFMA util (LDS-bound)", "status": "done"},
-    {"phase": "optimize",   "label": "Phase 5 \u2014 cut LDS/WG to raise occupancy + MFMA util (brainstorm \u2192 spec \u2192 plan)",         "status": "todo"},
-    {"phase": "ship",       "label": "Phase 6 \u2014 N-way re-compare + routing PR (conditional on beating AITER)",                       "status": "deferred"}
+    {"phase": "optimize",   "label": "Phase 5 \u2014 GQA-fold prototype: NOT VALIDATED (occupancy +38%\u21926.76 but MFMA-util fell 22\u219214.9%, latency +29-51%; occupancy not the bottleneck)", "status": "done"},
+    {"phase": "pivot",      "label": "Phase 5b \u2014 cut per-MFMA V-overhead (register-V / standard-QK, no V-transpose): the real lever (brainstorm \u2192 spec \u2192 plan)", "status": "todo"},
+    {"phase": "ship",       "label": "Phase 6 \u2014 N-way re-compare + routing PR (conditional on beating AITER)", "status": "deferred"}
   ]
 }

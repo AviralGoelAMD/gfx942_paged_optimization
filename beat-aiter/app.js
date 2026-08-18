@@ -11,6 +11,7 @@ const PHASE_ORDER_LABEL = {
   baseline: "Baseline",
   analyze: "ISA + rocprof",
   optimize: "Optimize",
+  pivot: "V-overhead lever",
   ship: "Decide + ship",
   grounding: "Grounding",
   dashboard: "Dashboard",
@@ -34,6 +35,7 @@ async function main() {
     kernelSection(ours, aiter) +
     resultsSection(d) +
     analysisSection(d) +
+    foldResultSection(d) +
     directionalReadSection(d) +
     pagedResultsSection(d) +
     swResultsSection(d) +
@@ -82,6 +84,34 @@ function analysisSection(d) {
       v_mfma <b>${i.ours_mfma}</b> = <b>${i.aiter_mfma}</b> (identical matmul work). AITER's static LDS descriptor is 0, but its ds_read/ds_write prove it uses <b>dynamically-allocated</b> LDS &mdash; just a smaller footprint than ours.</div>
     <div class="callout reveal"><h4>&#128200; Gap analysis</h4><p>${esc(a.takeaway)}</p>
       <p style="opacity:.7">${esc(a.caveat)}</p></div>
+  </section>`;
+}
+
+// ---- 6. GQA-fold prototype result (negative) -------------------------------
+function foldResultSection(d) {
+  const f = d.foldResult;
+  if (!f) return "";
+  const rows = f.rows.map((r) => {
+    const fold = /fold/i.test(r.kernel);
+    const col = fold ? "var(--ours)" : (/aiter/i.test(r.kernel) ? "var(--aiter)" : "var(--dim)");
+    return `<tr${fold ? ' class="hi"' : ""}>
+      <td class="p" style="color:${col}">${esc(r.kernel)}</td>
+      <td class="v">${r.occ.toFixed(2)}</td>
+      <td class="v">${r.mfma.toFixed(1)}%</td>
+      <td class="v">${r.ms8192.toFixed(2)}</td>
+      <td class="v">${r.ms16384.toFixed(2)}</td></tr>`;
+  }).join("");
+  return `
+  <section>
+    <h2>6. GQA-fold prototype <span class="h2note">(Phase 5 &middot; NOT VALIDATED)</span></h2>
+    <p class="lede">${esc(f.title)} &mdash; a measured negative result. Occupancy is not the bottleneck.</p>
+    <table class="reveal">
+      <thead><tr><th>kernel</th><th>occ (waves/CU)</th><th>MFMA-util</th><th>Sq8192 ms</th><th>Sq16384 ms</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="callout reveal"><h4>&#9888; Verdict: NOT VALIDATED</h4><p>${esc(f.verdict)}</p>
+      <p><b>Insight:</b> ${esc(f.insight)}</p>
+      <p style="opacity:.7">${esc(f.correctness)}</p></div>
   </section>`;
 }
 
