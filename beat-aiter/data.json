@@ -1,0 +1,57 @@
+{
+  "title": "gfx942 dense-paged-SW \u2014 beat-AITER journey",
+  "updated": "2026-08-17",
+  "problemShape": {
+    "operation": "SDPA prefill (fwd)",
+    "regime": "dense flash-attention \u00b7 paged KV \u00b7 sliding window",
+    "discriminator": "max_seqlen_q > 1 (prefill); routes to gfx942 attention_dense paged+SW path",
+    "masking": "causal + sliding window (window=4096)",
+    "dtype": "bf16 (primary), fp16 (secondary)",
+    "head_size": 128,
+    "gqa": "Hq=32 / Hkv=8",
+    "num_seqs": 1,
+    "kv_layout": "paged, block_size=16",
+    "tile": "T=64",
+    "seqlens": "Sq=Sk in {8192, 16384}",
+    "scale": "1/sqrt(128)",
+    "extras": "no softcap / alibi / sinks",
+    "competitor": "AITER unified-attention prefill",
+    "measurement": "ours = kernel-bound time_launches (15 warmup / 60 iters, ROCKE_BACKEND=python); AITER + prod 4-warp via sw_paged_bench.py (10 warmup / 50 iters); correctness-gated vs fp32 windowed SDPA BEFORE timing.",
+    "ratio_caveat": "Same-node (ctr-s93-mi300x-21), same shape, same session. ours = dense-paged-SW kernel rebased onto develop f20838a (7 paged+SW commits replayed, 0 conflicts; base kernel already on develop via #10337). This two-way is the START LINE of the beat-AITER journey, not a shipped result."
+  },
+  "kernels": [
+    {
+      "role": "baseline",
+      "name": "rocKE dense-paged-SW",
+      "sourcePath": "dnn-providers/hip-kernel-provider/rocke/library/kernels/gfx942/attention_dense.py::build_attention_dense",
+      "sourceUrl": "https://github.com/AviralGoelAMD/rocm-libraries/blob/users/avirgoel/ck/gfx942-dense-paged-sw/dnn-providers/hip-kernel-provider/rocke/library/kernels/gfx942/attention_dense.py",
+      "shapePassed": "_dense_spec(AttentionRequest(batch=1, nhead_q=32, nhead_k=8, seqlen_q=S, seqlen_k=S, hdim_q=128, hdim_v=128, mask_type=1, dtype=bf16, algorithm=attention_dense)) \u2192 replace(paged=True, block_size=16, num_kv_blocks=2\u00b7S/16, persistent=False, sliding_window=4096)"
+    },
+    {
+      "role": "competitor",
+      "name": "AITER unified_attention",
+      "sourcePath": "aiter/ops/triton/attention/unified_attention.py::unified_attention",
+      "sourceUrl": "https://github.com/ROCm/aiter/blob/main/aiter/ops/triton/attention/unified_attention.py",
+      "shapePassed": "unified_attention(q, kc, vc, out, cu_seqlens_q, seqused_k, max_seqlen_q=S, max_seqlen_k=S, softmax_scale=1/sqrt(128), causal=True, window_size=(4095,0), block_table, softcap=0.0)"
+    }
+  ],
+  "results": [
+    {"shape": "Sq8192",  "dtype": "bf16", "kernel": "rocKE dense-paged-SW", "ms": 1.729, "tflops": 238.5, "max_abs": 0.00845,   "notes": "1.56x behind AITER \u2014 start line; correct vs fp32 windowed SDPA"},
+    {"shape": "Sq8192",  "dtype": "bf16", "kernel": "AITER",               "ms": 1.109, "tflops": 371.8, "max_abs": 0.000708,  "notes": "competitor (reference)"},
+    {"shape": "Sq16384", "dtype": "bf16", "kernel": "rocKE dense-paged-SW", "ms": 3.335, "tflops": 288.5, "max_abs": 0.00845,   "notes": "1.36x behind AITER"},
+    {"shape": "Sq16384", "dtype": "bf16", "kernel": "AITER",               "ms": 2.459, "tflops": 391.2, "max_abs": 0.000639,  "notes": "competitor (reference)"},
+    {"shape": "Sq8192",  "dtype": "fp16", "kernel": "rocKE dense-paged-SW", "ms": 1.641, "tflops": 251.2, "max_abs": 0.00117,   "notes": "1.56x behind AITER"},
+    {"shape": "Sq8192",  "dtype": "fp16", "kernel": "AITER",               "ms": 1.053, "tflops": 391.5, "max_abs": 0.000085,  "notes": "competitor (reference)"},
+    {"shape": "Sq16384", "dtype": "fp16", "kernel": "rocKE dense-paged-SW", "ms": 3.175, "tflops": 303.0, "max_abs": 0.00117,   "notes": "1.35x behind AITER"},
+    {"shape": "Sq16384", "dtype": "fp16", "kernel": "AITER",               "ms": 2.352, "tflops": 409.0, "max_abs": 0.000077,  "notes": "competitor (reference)"}
+  ],
+  "checklist": [
+    {"phase": "infra",      "label": "Phase 0 \u2014 stand up journey doc + this dashboard (SSOT)",                                    "status": "done"},
+    {"phase": "frame",      "label": "Phase 1 \u2014 pin regime + problem shape (SSOT): dense flash-attn \u00b7 paged \u00b7 SW, D128 GQA32/8 W4096", "status": "done"},
+    {"phase": "competitor", "label": "Phase 2 \u2014 AITER unified_attention source + SW parity confirmed (window_size=(4095,0))",       "status": "done"},
+    {"phase": "baseline",   "label": "Phase 3 \u2014 two-way baseline: dense-paged-SW vs AITER (same-node, correctness-gated)",          "status": "done"},
+    {"phase": "analyze",    "label": "Phase 4 \u2014 ISA + rocprofv3 HW counters, ours vs AITER: locate the 1.35\u20131.56x gap",          "status": "todo"},
+    {"phase": "optimize",   "label": "Phase 5 \u2014 design + build the optimization to close the gap (brainstorm \u2192 spec \u2192 plan)",   "status": "deferred"},
+    {"phase": "ship",       "label": "Phase 6 \u2014 N-way re-compare + routing PR (conditional on beating AITER)",                       "status": "deferred"}
+  ]
+}
